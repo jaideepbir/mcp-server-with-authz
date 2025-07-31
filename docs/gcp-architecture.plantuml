@@ -1,0 +1,55 @@
+@startuml
+!define RECTANGLE class
+!define DATABASE rectangle
+!define PERSON actor
+!define QUEUE rectangle
+
+title GCP Architecture Diagram
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+' Define components
+RECTANGLE "Internet Users" as users
+RECTANGLE "Cloud Load Balancer" as lb
+RECTANGLE "MCP Streamlit\n(Cloud Run)" as streamlit
+RECTANGLE "VPC SC" as vpcsc
+RECTANGLE "MCP Server\n(Cloud Run)" as server
+RECTANGLE "OPA Service\n(Cloud Run)" as opa
+DATABASE "Policy Bundles\n(Cloud Storage)" as policies
+DATABASE "Data Storage\n(Cloud Storage)" as data
+
+' Define relationships
+users --> lb : Access
+lb --> streamlit : Routes to
+streamlit --> server : API Calls
+server --> opa : Policy Eval
+opa --> policies : Loads Policies
+server --> data : Stores Data
+streamlit --> data : Reads Data
+
+note right of vpcsc
+  VPC Service Controls
+  perimeter isolates services
+  and prevents data exfiltration
+end note
+
+note right of lb
+  SSL Termination
+  Content-based routing
+  Single entry point
+end note
+
+note right of server
+  Main API service
+  JWT Authentication
+  CSV/Excel Processing
+end note
+
+note right of opa
+  Policy Evaluation
+  Rego Policies
+  Decision Logging
+end note
+
+@enduml
