@@ -1,59 +1,45 @@
 @startuml
-title Data Flow in MCP Server
-
 skinparam componentStyle rectangle
 skinparam shadowing false
 
 ' Define components
 actor "User" as user
-rectangle "Streamlit UI
-(Cloud Run)" as streamlit
+rectangle "Streamlit UI" as streamlit
 rectangle "Load Balancer" as lb
-rectangle "MCP Server
-(Cloud Run)" as server
-rectangle "OPA Service
-(Cloud Run)" as opa
-database "Policy Bundles
-(Cloud Storage)" as policies
-database "Data Files
-(Cloud Storage)" as data
-rectangle "Audit Logs" as logs
+rectangle "MCP Server" as server
+rectangle "OPA Service" as opa
+database "Policy Bundles" as policies
+database "Data Files" as data
 
 ' Define flows
-user --> streamlit : 1. Access UI
-streamlit --> lb : 2. API Requests
-lb --> server : 3. Route Requests
-server --> opa : 4. Policy Eval
-opa --> policies : 5. Load Policies
-server --> data : 6. Store/Retrieve Data
-streamlit --> data : 7. Direct Data Access
-server --> logs : 8. Audit Logging
+user --> streamlit : Access UI
+streamlit --> lb : API Requests
+lb --> server : Route Requests
+server --> opa : Policy Eval
+opa --> policies : Load Policies
+server --> data : Store/Retrieve Data
+streamlit --> data : Direct Data Access
 
 note right of streamlit
-  1. User Authentication
-  2. Tool Selection
-  3. File Upload
+  User Authentication
+  Tool Selection
+  File Upload
 end note
 
 note right of server
-  4. CSV/Excel Processing
-  5. Policy Enforcement
-  6. Data Management
+  CSV/Excel Processing
+  Policy Enforcement
+  Data Management
 end note
 
 note right of opa
-  7. Policy Evaluation
-  8. Decision Return
+  Policy Evaluation
+  Decision Return
 end note
 
 note right of data
-  9. Secure Storage
-  10. Version Control
-end note
-
-note right of logs
-  11. Compliance
-  12. Troubleshooting
+  Secure Storage
+  Version Control
 end note
 
 @enduml

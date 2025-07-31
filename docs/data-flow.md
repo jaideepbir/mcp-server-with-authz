@@ -2,31 +2,27 @@
 
 ## Overview
 
-This document describes the data flow within the MCP Server application when deployed on Google Cloud Platform (GCP).
+This document describes the data flow within the MCP Server application when deployed on Google Cloud Platform (GCP), following the Model Context Protocol.
 
 ## Data Flow Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              External Users                                │
+│                        LLM Applications                                     │
+│              (Claude Desktop, Custom Apps, etc)                             │
 └─────────────────────────┬───────────────────────────────────────────────────┘
                           │
                  ┌────────▼────────┐
                  │                 │
                  │  Authentication │
+                 │     (IAM)       │
                  │                 │
                  └────────┬────────┘
                           │
                  ┌────────▼────────┐
                  │                 │
-                 │   Streamlit     │
-                 │   Web UI        │
-                 │                 │
-                 └────────┬────────┘
-                          │
-                 ┌────────▼────────┐
-                 │                 │
-                 │   Load Balancer │
+                 │   MCP Protocol  │
+                 │     Server      │
                  │                 │
                  └────────┬────────┘
                           │
@@ -34,28 +30,22 @@ This document describes the data flow within the MCP Server application when dep
         │                 │                 │
 ┌───────▼────────┐ ┌──────▼──────┐ ┌────────▼────────┐
 │                │ │             │ │                 │
-│  MCP Server    │ │ OPA Service │ │ Cloud Storage   │
-│  (Cloud Run)   │ │ (Cloud Run) │ │ (Buckets)       │
-│                │ │             │ │                 │
-│ ┌────────────┐ │ │ ┌─────────┐ │ │ ┌─────────────┐ │
-│ │            │ │ │ │         │ │ │ │             │ │
-│ │   Auth     │ │ │ │ Policy  │ │ │ │   Policy    │ │
-│ │   Module   │ │ │ │ Engine  │ │ │ │   Bundles   │ │
-│ │            │ │ │ │         │ │ │ │             │ │
-│ └────────────┘ │ │ └─────────┘ │ │ └─────────────┘ │
-│                │ │             │ │                 │
-│ ┌────────────┐ │ │             │ │ ┌─────────────┐ │
-│ │            │ │ │             │ │ │             │ │
-│ │   CSV      │ │ │             │ │ │   Data      │ │
-│ │  Reader    │ │ │             │ │ │   Files     │ │
-│ │            │ │ │             │ │ │             │ │
-│ └────────────┘ │ │             │ │ └─────────────┘ │
-│                │ │             │ │                 │
-│ ┌────────────┐ │ │             │ │                 │
-│ │            │ │ │             │ │                 │
-│ │   CSV      │ │ │             │ │                 │
-│ │ Analyzer   │ │ │             │ │                 │
-│ │            │ │ │             │ │                 │
+│  MCP Tools     │ │ OPA Service │ │ Cloud Storage   │
+│  (File Ops,    │ │ (Cloud Run) │ │ (Buckets)       │
+│   Policy Eval) │ │             │ │                 │
+│                │ │ ┌─────────┐ │ │ ┌─────────────┐ │
+│ ┌────────────┐ │ │ │ Policy  │ │ │ │             │ │
+│ │            │ │ │ │ Engine  │ │ │ │   Policy    │ │
+│ │   CSV      │ │ │ │         │ │ │ │   Bundles   │ │
+│ │  Reader    │ │ │ └─────────┘ │ │ │             │ │
+│ │            │ │ │             │ │ └─────────────┘ │
+│ └────────────┘ │ │             │ │                 │
+│                │ │             │ │ ┌─────────────┐ │
+│ ┌────────────┐ │ │             │ │ │             │ │
+│ │            │ │ │             │ │ │   Data      │ │
+│ │   CSV      │ │ │             │ │ │   Files     │ │
+│ │ Analyzer   │ │ │             │ │ │             │ │
+│ │            │ │ │             │ │ └─────────────┘ │
 │ └────────────┘ │ │             │ │                 │
 │                │ │             │ │                 │
 └────────────────┘ └─────────────┘ └─────────────────┘
@@ -70,56 +60,65 @@ This document describes the data flow within the MCP Server application when dep
 
 ## Detailed Data Flow
 
-### 1. User Access and Authentication
+### 1. LLM Application Connection
 
-1. User accesses the application through a browser
-2. Request is routed through Cloud Load Balancer
-3. Streamlit Web UI service handles the initial request
-4. User authenticates with credentials
-5. Authentication module in MCP Server validates credentials
-6. JWT token is generated and returned to user
-7. Token is stored in browser session
+1. LLM application (e.g., Claude Desktop) connects to MCP Server
+2. Connection is authenticated through IAM or custom token system
+3. MCP protocol handshake establishes communication channel
 
-### 2. Tool Selection and File Upload
+### 2. Tool Discovery
 
-1. Authenticated user selects a tool (CSV Reader, CSV Analyzer, or OPA Evaluator)
-2. For CSV tools, user uploads a file or selects a sample
-3. Streamlit UI sends file to MCP Server API
-4. File is temporarily stored in memory or forwarded directly to processing modules
+1. LLM application requests list of available tools
+2. MCP Server responds with tool definitions:
+   - CSV/Excel Reader
+   - CSV/Excel Analyzer
+   - Data Filter
+   - Data Sort
+   - OPA Policy Evaluator
+3. LLM can also access file resources through MCP resource interface
 
-### 3. CSV/Excel Processing
+### 3. Tool Usage
 
-#### CSV Reader
-1. MCP Server receives file from Streamlit UI
-2. CSV Reader module parses the file
-3. Data is structured and returned to Streamlit UI
-4. Streamlit UI displays data in a table format
+#### CSV/Excel Processing
+1. LLM requests to use CSV Reader tool with file path parameter
+2. MCP Server reads file from Cloud Storage
+3. Data is parsed and structured
+4. Results are returned to LLM through MCP protocol
 
-#### CSV Analyzer
-1. MCP Server receives file from Streamlit UI
-2. CSV Analyzer module performs statistical analysis
-3. Plotly is used to generate visualizations
-4. Results and visualizations are returned to Streamlit UI
-5. Streamlit UI displays analysis results and charts
+#### Data Analysis
+1. LLM requests to use CSV Analyzer tool with file path parameter
+2. MCP Server performs statistical analysis on the data
+3. Results are returned to LLM through MCP protocol
+
+#### Data Manipulation
+1. LLM requests to use Filter or Sort tools with parameters
+2. MCP Server applies the requested operations
+3. Results are returned to LLM through MCP protocol
 
 ### 4. Policy Evaluation (OPA)
 
-1. For each request requiring authorization, MCP Server calls OPA Service
+1. When LLM requests an action that requires authorization, MCP Server calls OPA Service
 2. Request context and user information are sent to OPA
 3. OPA Service evaluates policies using bundles from Cloud Storage
 4. Decision (allow/deny) is returned to MCP Server
-5. MCP Server enforces the decision
+5. MCP Server enforces the decision and responds to LLM
 
-### 5. Data Storage
+### 5. Resource Access
 
-1. Uploaded files are stored in Cloud Storage buckets
+1. LLM can request access to file resources through MCP resource interface
+2. MCP Server retrieves file content from Cloud Storage
+3. Content is returned to LLM through MCP protocol
+
+### 6. Data Storage
+
+1. Files are stored in Cloud Storage buckets
 2. Access to buckets is controlled by IAM policies
 3. VPC Service Controls prevent unauthorized data exfiltration
 4. Files are versioned for audit purposes
 
-### 6. Audit and Logging
+### 7. Audit and Logging
 
-1. All requests are logged by Cloud Run services
+1. All MCP protocol interactions are logged
 2. OPA decisions are logged for audit purposes
 3. Logs are sent to Cloud Logging
 4. Logs are retained for compliance and troubleshooting
@@ -129,7 +128,7 @@ This document describes the data flow within the MCP Server application when dep
 1. All communication between services is encrypted
 2. VPC Service Controls isolate sensitive data
 3. IAM policies enforce least privilege access
-4. Ingress is limited to Load Balancer only
+4. Ingress is limited to authorized LLM applications
 5. Egress is controlled through Cloud NAT and firewall rules
 6. Secrets are managed through Secret Manager
 7. Regular security scans are performed on container images
@@ -138,6 +137,6 @@ This document describes the data flow within the MCP Server application when dep
 
 1. Cloud Run automatically scales based on request volume
 2. Cloud Storage provides unlimited storage capacity
-3. Load Balancer distributes traffic efficiently
+3. Load Balancer distributes traffic efficiently (if used)
 4. VPC allows for private service communication
 5. Caching can be implemented for frequently accessed data

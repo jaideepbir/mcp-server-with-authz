@@ -1,15 +1,14 @@
-# GCP Deployment Architecture
+# GCP Deployment Architecture for MCP Server
 
 ## Overview
 
-This document describes the architecture for deploying the MCP Server on Google Cloud Platform (GCP) using Cloud Run, with security measures like VPC Service Controls and proper ingress/egress rules.
+This document describes the architecture for deploying the Model Context Protocol (MCP) Server on Google Cloud Platform (GCP) using Cloud Run, with security measures like VPC Service Controls and proper ingress/egress rules.
 
 ## Components
 
 1. **Cloud Run Services**:
-   - `mcp-server`: Main API service
-   - `mcp-streamlit`: Web interface
-   - `opa-service`: Open Policy Agent
+   - `mcp-server`: Main MCP service implementing the Model Context Protocol
+   - `opa-service`: Open Policy Agent for policy evaluation
 
 2. **Cloud Storage**:
    - Data buckets for file storage
@@ -18,7 +17,7 @@ This document describes the architecture for deploying the MCP Server on Google 
 3. **Networking**:
    - VPC Network
    - VPC Service Controls perimeter
-   - Load Balancer for external access
+   - Load Balancer for external access (if needed)
 
 4. **Security**:
    - Identity and Access Management (IAM)
@@ -29,24 +28,22 @@ This document describes the architecture for deploying the MCP Server on Google 
 
 ```
                             ┌─────────────────────┐
-                            │   Internet Users    │
+                            │   LLM Applications  │
+                            │   (Claude Desktop,  │
+                            │    Custom Apps, etc)│
                             └──────────┬──────────┘
                                        │
                             ┌──────────▼──────────┐
                             │  Cloud Load Balancer │
+                            │     (if required)    │
                             └──────────┬──────────┘
                                        │
                     ┌──────────────────┼──────────────────┐
                     │                  │                  │
          ┌──────────▼──────────┐    ┌──▼──┐    ┌──────────▼──────────┐
-         │   MCP Streamlit     │    │ VPC │    │     MCP Server      │
-         │     (Cloud Run)     │    │ SC  │    │      (Cloud Run)    │
+         │   MCP Server        │    │ VPC │    │     OPA Service     │
+         │    (Cloud Run)      │    │ SC  │    │      (Cloud Run)    │
          └─────────────────────┘    └──┬──┘    └─────────────────────┘
-                                      │
-                            ┌─────────▼─────────┐
-                            │   OPA Service     │
-                            │    (Cloud Run)    │
-                            └─────────┬─────────┘
                                       │
                             ┌─────────▼─────────┐
                             │  Policy Bundles   │
@@ -63,17 +60,12 @@ This document describes the architecture for deploying the MCP Server on Google 
 
 ### 1. Cloud Run Services
 
-#### MCP Server (API)
+#### MCP Server
 - Deployed as a Cloud Run service
-- Handles all API requests for CSV/Excel processing and authentication
+- Implements the Model Context Protocol
+- Provides tools for CSV/Excel processing and policy evaluation
 - Communicates with OPA Service for policy evaluation
 - Uses IAM for authentication and authorization
-
-#### MCP Streamlit (Web Interface)
-- Deployed as a Cloud Run service
-- Provides the user interface for the application
-- Communicates with MCP Server API
-- Only allows authenticated users with proper roles
 
 #### OPA Service
 - Deployed as a Cloud Run service
@@ -106,7 +98,7 @@ This document describes the architecture for deploying the MCP Server on Google 
 - Limits lateral movement between services
 
 #### Load Balancer
-- Single entry point for external traffic
+- Optional entry point for external traffic
 - SSL termination
 - Content-based routing to different Cloud Run services
 
@@ -118,30 +110,28 @@ This document describes the architecture for deploying the MCP Server on Google 
 - Principle of least privilege applied to all resources
 
 #### Ingress/Egress Rules
-- Ingress: Only allow traffic from Load Balancer
+- Ingress: Controlled access from LLM applications
 - Egress: Controlled access to GCP services and internet
 - VPC Firewall rules for additional security layers
 
 ## Data Flow
 
-1. **User Authentication**
-   - User accesses Streamlit UI through Load Balancer
-   - Streamlit service authenticates user with IAM
-   - JWT token generated for session
+1. **LLM Application Connection**
+   - LLM application connects to MCP Server through Model Context Protocol
+   - Authentication happens through IAM or custom token system
 
-2. **File Processing**
-   - User uploads CSV/Excel file via Streamlit UI
-   - Streamlit service forwards request to MCP Server API
-   - MCP Server processes file and stores in Cloud Storage
-   - Results sent back to user through Streamlit UI
+2. **Tool Usage**
+   - LLM requests to use a tool (e.g., CSV reader, policy evaluator)
+   - MCP Server processes the request
+   - Results sent back to LLM through MCP protocol
 
 3. **Policy Evaluation**
-   - For each request, MCP Server calls OPA Service
+   - For requests requiring authorization, MCP Server calls OPA Service
    - OPA Service evaluates policies using bundles from Cloud Storage
    - Access decision returned to MCP Server
    - MCP Server enforces decision in response
 
 4. **Data Storage**
-   - Files stored in Cloud Storage buckets
+   - Files are stored in Cloud Storage buckets
    - Protected by VPC SC and IAM policies
    - Versioned for audit trail

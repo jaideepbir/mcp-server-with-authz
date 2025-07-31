@@ -1,8 +1,8 @@
-# GCP Deployment Guide
+# GCP Deployment Guide for MCP Server
 
 ## Overview
 
-This guide provides instructions for deploying the MCP Server application on Google Cloud Platform (GCP) using Cloud Run services.
+This guide provides instructions for deploying the Model Context Protocol (MCP) Server application on Google Cloud Platform (GCP) using Cloud Run services.
 
 ## Prerequisites
 
@@ -69,10 +69,6 @@ gsutil cp policies/* gs://$PROJECT_ID-mcp-policies/
 docker build -t gcr.io/$PROJECT_ID/mcp-server .
 docker push gcr.io/$PROJECT_ID/mcp-server
 
-# Build Streamlit image
-docker build -f Dockerfile.streamlit -t gcr.io/$PROJECT_ID/mcp-streamlit .
-docker push gcr.io/$PROJECT_ID/mcp-streamlit
-
 # OPA service uses official image, so no build needed
 ```
 
@@ -95,13 +91,6 @@ gcloud run deploy mcp-server \
   --region $REGION \
   --allow-unauthenticated \
   --set-env-vars "OPA_URL=https://opa-service-url"
-
-# Deploy Streamlit UI
-gcloud run deploy mcp-streamlit \
-  --image gcr.io/$PROJECT_ID/mcp-streamlit \
-  --platform managed \
-  --region $REGION \
-  --allow-unauthenticated
 ```
 
 ### 6. Set up VPC Service Controls
@@ -127,28 +116,21 @@ gcloud access-context-manager perimeters create mcp-perimeter \
 gcloud iam service-accounts create mcp-server-sa \
   --display-name "MCP Server Service Account"
 
-gcloud iam service-accounts create mcp-streamlit-sa \
-  --display-name "MCP Streamlit Service Account"
-
 # Grant permissions to service accounts
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:mcp-server-sa@$PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/run.invoker"
-
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:mcp-streamlit-sa@$PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/run.invoker"
 ```
 
-### 8. Set up Load Balancer
+### 8. Set up Load Balancer (Optional)
 
 ```bash
-# This is a simplified example; actual setup is more complex
+# This is only needed if you want to expose the service publicly
 # Create a serverless network endpoint group
 gcloud compute network-endpoint-groups create mcp-neg \
   --region=$REGION \
   --network-endpoint-type=serverless \
-  --cloud-run-service=mcp-streamlit
+  --cloud-run-service=mcp-server
 
 # Create load balancer components (backend service, url map, etc.)
 # Refer to GCP documentation for complete load balancer setup
@@ -157,14 +139,7 @@ gcloud compute network-endpoint-groups create mcp-neg \
 ## Environment Variables
 
 ### MCP Server
-- `SECRET_KEY`: Application secret key
-- `JWT_SECRET_KEY`: JWT secret for token signing
 - `OPA_URL`: URL of the OPA service
-- `HOST`: Host to bind to (default: 0.0.0.0)
-- `PORT`: Port to listen on (default: 5000)
-
-### Streamlit UI
-- `SERVER_URL`: URL of the MCP Server API
 
 ## Monitoring and Logging
 
@@ -189,6 +164,19 @@ gcloud compute network-endpoint-groups create mcp-neg \
 3. Use Cloud Storage for unlimited file storage
 4. Implement caching for frequently accessed data
 5. Monitor resource usage and adjust as needed
+
+## Integration with LLM Applications
+
+To connect LLM applications to your deployed MCP server:
+
+1. For Claude Desktop:
+   ```bash
+   uv run mcp install src/mcp_server.py
+   ```
+
+2. For custom applications:
+   - Use the MCP Python client library to connect to your Cloud Run service
+   - Handle authentication appropriately (IAM or custom tokens)
 
 ## Troubleshooting
 
