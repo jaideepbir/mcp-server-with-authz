@@ -17,13 +17,18 @@ services:
       - ./src:/app/src
       
   opa:
-    build:
-      context: .
-      dockerfile: Dockerfile.opa
+    image: openpolicyagent/opa:0.57.0-rootless
+    platform: linux/arm64
     ports:
       - "8181:8181"
     volumes:
       - ./policies:/policies
+    command: 
+      - "run"
+      - "--server"
+      - "--log-format=json"
+      - "--log-level=info"
+      - "/policies"
       
   streamlit:
     build:
