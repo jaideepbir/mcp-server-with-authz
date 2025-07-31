@@ -117,6 +117,15 @@ agent = LlmAgent(
 )
 ```
 
+### Current Limitations with ADK
+
+Please note that the current version of the Google ADK has some limitations:
+1. The YAML configuration loading feature (`_load_from_yaml_config`) is marked as work-in-progress and not ready for use.
+2. This prevents using the standard `adk run` command with agent configurations.
+3. Direct programmatic usage of ADK components is possible but requires careful handling of parameters.
+
+We've provided example code in `run_mcp_agent.py` that demonstrates direct usage of ADK components, but you may need to adapt it based on your specific needs and the evolving ADK API.
+
 ## Tools Provided
 
 ### Authentication
