@@ -1,0 +1,26 @@
+{
+  "services": {
+    "local": {
+      "url": "http://localhost:8181"
+    }
+  },
+  "bundles": {
+    "authz": {
+      "service": "local",
+      "resource": "/bundles/authz",
+      "persist": true,
+      "polling": {
+        "min_delay_seconds": 10,
+        "max_delay_seconds": 30
+      }
+    }
+  },
+  "decision_logs": {
+    "console": true,
+    "reporting": {
+      "min_delay_seconds": 10,
+      "max_delay_seconds": 30
+    }
+  },
+  "default_decision": "simple/allow"
+}

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=dev-secret-key
+      - JWT_SECRET_KEY=jwt-secret-string
+      - OPA_URL=http://opa:8181
+    depends_on:
+      - opa
+      
+  opa:
+    build:
+      context: .
+      dockerfile: Dockerfile.opa
+    ports:
+      - "8181:8181"
+      
+  streamlit:
+    build: .
+    ports:
+      - "8501:8501"
+    command: streamlit run src/web/app.py
+    environment:
+      - SERVER_URL=http://mcp-server:5000
+    depends_on:
+      - mcp-server
