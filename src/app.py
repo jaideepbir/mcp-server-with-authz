@@ -22,6 +22,9 @@ def create_app():
     # Initialize CORS
     CORS(app)
     
+    # Initialize authentication FIRST, before API documentation
+    init_auth(app)
+    
     # Initialize API documentation
     api = Api(
         app,
@@ -80,7 +83,9 @@ def create_app():
         @ns_auth.response(401, 'Invalid credentials', error_model)
         def post(self):
             """Generate JWT token"""
-            pass  # Implementation in auth module
+            # This endpoint is actually implemented in the auth module
+            # We're just providing documentation here
+            pass
     
     # Add documentation for CSV reader endpoints
     ns_csv_reader = api.namespace('csv-reader', description='CSV/Excel reader operations')
@@ -148,10 +153,7 @@ def create_app():
             """Evaluate policy with input data"""
             pass  # Implementation in opa_client module
     
-    # Initialize authentication
-    init_auth(app)
-    
-    # Register blueprints
+    # Register blueprints (the actual implementations)
     app.register_blueprint(csv_reader_bp, url_prefix='/api/csv-reader')
     app.register_blueprint(csv_analyzer_bp, url_prefix='/api/csv-analyzer')
     app.register_blueprint(opa_bp, url_prefix='/api/opa')
