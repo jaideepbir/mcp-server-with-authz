@@ -1,21 +1,27 @@
-# MCP Server
+# MCP Server (Model Context Protocol)
 
-Multi-Component Platform Server with authenticated tools for data processing and policy evaluation.
+Model Context Protocol Server with tools for data processing and policy evaluation.
+
+## Overview
+
+This project implements a Model Context Protocol (MCP) server that provides tools for:
+1. CSV/Excel reading and analysis
+2. Data filtering and sorting
+3. OPA policy evaluation for access control
+
+The server follows the Model Context Protocol specification, allowing LLMs to interact with these tools through a standardized interface.
 
 ## Features
 
-1. **Authentication**: JWT-based authentication with role-based access control
-2. **CSV/Excel Reader**: Read and display CSV/Excel files with sorting and filtering
-3. **CSV/Excel Analyzer**: Analyze data and generate visualizations with Plotly
-4. **OPA Client**: Evaluate access control policies using Open Policy Agent
-5. **Streamlit Web Interface**: User-friendly interface to access all tools
-6. **API Documentation**: Swagger-like API documentation
-7. **Containerized Services**: All components containerized with Docker
+1. **Authentication**: User authentication with role-based access control
+2. **CSV/Excel Processing**: Read, analyze, filter, and sort CSV/Excel files
+3. **OPA Policy Evaluation**: Evaluate access control policies (simple, advanced, attribute-based)
+4. **Resource Access**: Access file contents through MCP resources
+5. **Prompt Templates**: Predefined prompts for common tasks
 
 ## Prerequisites
 
 - Python 3.8+
-- Docker and Docker Compose
 - pip (Python package installer)
 
 ## Installation
@@ -29,73 +35,59 @@ Multi-Component Platform Server with authenticated tools for data processing and
 2. Install Python dependencies:
    ```bash
    pip install -r requirements.txt
-   ```
-
-3. Set up environment variables (copy `.env.example` to `.env` and modify as needed):
-   ```bash
-   cp .env.example .env
+   pip install "mcp[cli]"
    ```
 
 ## Running the Application
 
-The easiest way to run the application is using Docker Compose:
-
+### Direct Execution
 ```bash
-docker-compose up
+python src/mcp_server.py
 ```
 
-This will start all services:
-- MCP Server API on port 5000
-- OPA service on port 8181
-- Streamlit web interface on port 8501
+### Development Mode (with MCP Inspector)
+```bash
+uv run mcp dev src/mcp_server.py
+```
 
-## Manual Installation and Running
+### As a Module
+```bash
+python -m src.mcp_server
+```
 
-If you prefer to run the services manually:
-
-1. Start the OPA service:
-   ```bash
-   docker build -f Dockerfile.opa -t mcp-opa .
-   docker run -p 8181:8181 -v $(pwd)/policies:/policies mcp-opa
-   ```
-
-2. Start the MCP server:
-   ```bash
-   python src/app.py
-   ```
-
-3. Start the Streamlit web interface:
-   ```bash
-   streamlit run src/web/app.py
-   ```
-
-## Authentication
-
-The application comes with two default users:
-- Admin user: username `admin`, password `admin123`
-- Regular user: username `user`, password `user123`
-
-## API Endpoints
+## Tools Provided
 
 ### Authentication
-- `POST /api/auth/login` - Generate JWT token
+- `authenticate_user(username, password)`: Authenticate a user and return their role
 
-### CSV/Excel Reader
-- `POST /api/csv-reader/read` - Read CSV/Excel file
+### Tool Management
+- `list_tools()`: List available tools in the MCP server
 
-### CSV/Excel Analyzer
-- `POST /api/csv-analyzer/analyze` - Analyze CSV/Excel file
-- `POST /api/csv-analyzer/visualize` - Generate visualization from CSV/Excel data
+### Data Processing
+- `read_csv_excel(file_path)`: Read a CSV or Excel file and return its contents as JSON
+- `analyze_csv_excel(file_path)`: Analyze a CSV or Excel file and return statistical summary
+- `filter_data(file_path, column, value)`: Filter data by column value
+- `sort_data(file_path, column, ascending)`: Sort data by column
 
-### OPA Client
-- `GET /api/opa/policies` - List available policies
-- `POST /api/opa/evaluate` - Evaluate policy with input data
+### Policy Evaluation
+- `evaluate_opa_policy(policy_name, input_data)`: Evaluate an OPA policy with input data
+
+## Resources
+
+### File Access
+- `file://{file_path}`: Access the content of a file
+
+## Prompts
+
+### Analysis Prompts
+- `csv_analysis_prompt(file_path)`: Generate a prompt for CSV analysis
+- `opa_policy_evaluation_prompt(policy_name, user_role, action)`: Generate a prompt for OPA policy evaluation
 
 ## Testing
 
-Run tests with:
+Run the test client:
 ```bash
-python -m pytest tests/
+python src/mcp_client.py
 ```
 
 ## Project Structure
@@ -103,34 +95,25 @@ python -m pytest tests/
 ```
 mcp-server/
 ├── src/
-│   ├── app.py              # Main application
-│   ├── auth/               # Authentication module
-│   ├── tools/              # Tool implementations
-│   │   ├── csv_reader.py   # CSV/Excel reader
-│   │   ├── csv_analyzer.py # CSV/Excel analyzer
-│   │   └── opa_client.py   # OPA client
-│   └── web/                # Streamlit web interface
-│       └── app.py
-├── policies/               # OPA policies
+│   ├── mcp_server.py       # Main MCP server implementation
+│   └── mcp_client.py       # Test client
 ├── tests/                  # Test files
 ├── docs/                   # Documentation
 ├── requirements.txt        # Python dependencies
-├── Dockerfile              # MCP Server Dockerfile
-├── Dockerfile.opa          # OPA Dockerfile
-├── Dockerfile.streamlit    # Streamlit Dockerfile
+├── package.json            # Node.js package configuration
+├── playwright.config.js    # Playwright configuration
+├── Dockerfile              # Docker configuration
 ├── docker-compose.yml      # Docker Compose configuration
 └── README.md               # This file
 ```
 
-## Policies
+## Integration with LLM Applications
 
-The OPA client includes three sample policies:
-
-1. **Simple**: Basic role-based access control
-2. **Advanced**: Department-based access control
-3. **Attribute-based**: Clearance-level and group-based access control
-
-Each policy has corresponding test cases in the tests directory.
+This MCP server can be integrated with any LLM application that supports the Model Context Protocol, such as:
+- Claude Desktop
+- Custom AI applications
+- IDE plugins
+- Chat interfaces
 
 ## Conventional Commits
 
