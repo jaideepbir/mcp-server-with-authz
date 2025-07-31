@@ -7,6 +7,11 @@ import pandas as pd
 import json
 import plotly.express as px
 import plotly.graph_objects as go
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # App title and description
 st.set_page_config(page_title="MCP Server", page_icon="📊", layout="wide")
@@ -16,19 +21,48 @@ st.markdown("Welcome to the MCP Server interface. Select a tool below to get sta
 # Initialize session state
 if 'token' not in st.session_state:
     st.session_state.token = None
+    st.session_state.username = None
+    st.session_state.role = None
 
 # Sidebar for authentication
 with st.sidebar:
     st.header("🔐 Authentication")
-    auth_token = st.text_input("Enter your auth token", type="password")
-    if st.button("Login"):
-        if auth_token:
-            # In a real application, you would authenticate with the server
-            # For demo purposes, we're just storing the token
-            st.session_state.token = auth_token
-            st.success("Successfully logged in!")
-        else:
-            st.error("Please enter an auth token")
+    
+    # Show user info if logged in
+    if st.session_state.token:
+        st.success(f"Logged in as: {st.session_state.username} ({st.session_state.role})")
+        if st.button("Logout"):
+            st.session_state.token = None
+            st.session_state.username = None
+            st.session_state.role = None
+            st.experimental_rerun()
+    else:
+        # Login form
+        username = st.text_input("Username", value="user")
+        password = st.text_input("Password", type="password", value="user123")
+        
+        if st.button("Login"):
+            if username and password:
+                try:
+                    # Authenticate with the server
+                    response = requests.post(
+                        "http://localhost:5000/api/auth/login",
+                        json={"username": username, "password": password}
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        st.session_state.token = data["access_token"]
+                        st.session_state.username = data["username"]
+                        st.session_state.role = data["role"]
+                        st.success("Successfully logged in!")
+                        st.experimental_rerun()
+                    else:
+                        st.error(f"Authentication failed: {response.json().get('message', 'Unknown error')}")
+                except Exception as e:
+                    st.error(f"Error connecting to authentication service: {str(e)}")
+            else:
+                st.error("Please enter both username and password")
 
 # Main content area
 if not st.session_state.token:
@@ -36,9 +70,15 @@ if not st.session_state.token:
 else:
     # Tool selection
     st.header("🛠️ Available Tools")
+    
+    # Only show OPA tool to admins
+    tool_options = ["CSV/Excel Reader", "CSV/Excel Analyzer"]
+    if st.session_state.role == "admin":
+        tool_options.append("OPA Policy Evaluator")
+        
     tool = st.selectbox(
         "Select a tool to use:",
-        ["CSV/Excel Reader", "CSV/Excel Analyzer", "OPA Policy Evaluator"]
+        tool_options
     )
     
     # Common headers for API requests
@@ -57,11 +97,13 @@ else:
             # Send file to API
             files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
             try:
-                response = requests.post(
-                    "http://localhost:5000/api/csv-reader/read",
-                    headers=headers,
-                    files=files
-                )
+                with st.spinner("Processing file..."):
+                    response = requests.post(
+                        "http://localhost:5000/api/csv-reader/read",
+                        headers=headers,
+                        files=files,
+                        timeout=30
+                    )
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -69,7 +111,7 @@ else:
                     
                     # Display data
                     st.write(f"### Data Preview ({data['rows']} rows)")
-                    st.dataframe(df)
+                    st.dataframe(df, height=400)
                     
                     # Allow sorting and filtering
                     st.subheader("🔍 Filter and Sort Data")
@@ -78,11 +120,14 @@ else:
                     # Filter by column
                     filter_col = st.selectbox("Select column to filter", ["None"] + columns)
                     if filter_col != "None":
-                        unique_values = df[filter_col].unique().tolist()
-                        filter_value = st.selectbox(f"Select value for {filter_col}", unique_values)
-                        filtered_df = df[df[filter_col] == filter_value]
-                        st.write(f"### Filtered Data ({len(filtered_df)} rows)")
-                        st.dataframe(filtered_df)
+                        unique_values = df[filter_col].dropna().unique().tolist()
+                        if unique_values:
+                            filter_value = st.selectbox(f"Select value for {filter_col}", unique_values)
+                            filtered_df = df[df[filter_col] == filter_value]
+                            st.write(f"### Filtered Data ({len(filtered_df)} rows)")
+                            st.dataframe(filtered_df, height=400)
+                        else:
+                            st.warning("No unique values found in selected column")
                     
                     # Sort by column
                     sort_col = st.selectbox("Select column to sort by", ["None"] + columns)
@@ -90,9 +135,11 @@ else:
                         ascending = st.checkbox("Ascending", True)
                         sorted_df = df.sort_values(by=sort_col, ascending=ascending)
                         st.write(f"### Sorted Data ({len(sorted_df)} rows)")
-                        st.dataframe(sorted_df)
+                        st.dataframe(sorted_df, height=400)
                 else:
                     st.error(f"Error: {response.json().get('error', 'Unknown error')}")
+            except requests.exceptions.Timeout:
+                st.error("Request timed out. Please try again with a smaller file.")
             except Exception as e:
                 st.error(f"Error processing file: {str(e)}")
     
@@ -107,18 +154,22 @@ else:
             # Send file to analysis API
             files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
             try:
-                response = requests.post(
-                    "http://localhost:5000/api/csv-analyzer/analyze",
-                    headers=headers,
-                    files=files
-                )
+                with st.spinner("Analyzing file..."):
+                    response = requests.post(
+                        "http://localhost:5000/api/csv-analyzer/analyze",
+                        headers=headers,
+                        files=files,
+                        timeout=30
+                    )
                 
-                if response.status_code == 0:
+                if response.status_code == 200:
                     data = response.json()
                     st.write("### Statistical Summary")
                     st.json(data["summary"])
                 else:
                     st.error(f"Error: {response.json().get('error', 'Unknown error')}")
+            except requests.exceptions.Timeout:
+                st.error("Request timed out. Please try again with a smaller file.")
             except Exception as e:
                 st.error(f"Error analyzing file: {str(e)}")
             
@@ -156,35 +207,40 @@ else:
                 
                 # Send to visualization API
                 files = {"file": (uploaded_file.name, uploaded_file, uploaded_file.type)}
-                response = requests.post(
-                    "http://localhost:5000/api/csv-analyzer/visualize",
-                    headers=headers,
-                    files=files,
-                    data={"chart_type": chart_type, "x_column": x_column, "y_column": y_column if y_column else ""}
-                )
-                
-                if response.status_code == 200:
-                    chart_data = response.json()
-                    # Display chart
-                    st.write("### Chart")
-                    fig = go.Figure(json.loads(chart_data["chart"]))
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.error(f"Error: {response.json().get('error', 'Unknown error')}")
+                if st.button("Generate Chart"):
+                    with st.spinner("Generating chart..."):
+                        response = requests.post(
+                            "http://localhost:5000/api/csv-analyzer/visualize",
+                            headers=headers,
+                            files=files,
+                            data={"chart_type": chart_type, "x_column": x_column, "y_column": y_column if y_column else ""},
+                            timeout=30
+                        )
+                    
+                    if response.status_code == 200:
+                        chart_data = response.json()
+                        # Display chart
+                        st.write("### Chart")
+                        fig = go.Figure(json.loads(chart_data["chart"]))
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.error(f"Error: {response.json().get('error', 'Unknown error')}")
             except Exception as e:
-                st.error(f"Error visualizing data: {str(e)}")
+                st.error(f"Error preparing visualization: {str(e)}")
     
-    # OPA Policy Evaluator tool
+    # OPA Policy Evaluator tool (admin only)
     elif tool == "OPA Policy Evaluator":
         st.subheader("🛡️ OPA Policy Evaluator")
         st.markdown("Evaluate access control policies using Open Policy Agent.")
         
         # Get available policies
         try:
-            response = requests.get(
-                "http://localhost:5000/api/opa/policies",
-                headers=headers
-            )
+            with st.spinner("Loading policies..."):
+                response = requests.get(
+                    "http://localhost:5000/api/opa/policies",
+                    headers=headers,
+                    timeout=10
+                )
             
             if response.status_code == 200:
                 policies = response.json()["policies"]
@@ -241,11 +297,13 @@ else:
                         "input": input_data
                     }
                     
-                    response = requests.post(
-                        "http://localhost:5000/api/opa/evaluate",
-                        headers=headers,
-                        json=eval_data
-                    )
+                    with st.spinner("Evaluating policy..."):
+                        response = requests.post(
+                            "http://localhost:5000/api/opa/evaluate",
+                            headers=headers,
+                            json=eval_data,
+                            timeout=10
+                        )
                     
                     if response.status_code == 200:
                         result = response.json()
@@ -259,5 +317,7 @@ else:
                         st.error(f"Error: {response.json().get('error', 'Unknown error')}")
             else:
                 st.error(f"Error fetching policies: {response.json().get('error', 'Unknown error')}")
+        except requests.exceptions.Timeout:
+            st.error("Request timed out. Please try again.")
         except Exception as e:
             st.error(f"Error connecting to policy service: {str(e)}")
