@@ -1,4 +1,4 @@
-# Dockerfile for MCP Server
+# Dockerfile for Streamlit Web Interface
 FROM python:3.9-slim
 
 # Set working directory
@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose port
-EXPOSE 5000
+EXPOSE 8501
 
-# Run application
-CMD ["python", "src/app.py"]
+# Run Streamlit app
+CMD ["streamlit", "run", "src/web/app.py", "--server.port=8501", "--server.address=0.0.0.0"]

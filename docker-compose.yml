@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   mcp-server:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
     environment:
@@ -11,6 +13,8 @@ services:
       - OPA_URL=http://opa:8181
     depends_on:
       - opa
+    volumes:
+      - ./src:/app/src
       
   opa:
     build:
@@ -18,13 +22,18 @@ services:
       dockerfile: Dockerfile.opa
     ports:
       - "8181:8181"
+    volumes:
+      - ./policies:/policies
       
   streamlit:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
     ports:
       - "8501:8501"
-    command: streamlit run src/web/app.py
     environment:
       - SERVER_URL=http://mcp-server:5000
     depends_on:
       - mcp-server
+    volumes:
+      - ./src/web:/app/src/web
