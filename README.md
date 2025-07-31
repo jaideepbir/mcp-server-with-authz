@@ -19,6 +19,7 @@ The server follows the Model Context Protocol specification, allowing LLMs to in
 4. **Resource Access**: Access file contents through MCP resources
 5. **Prompt Templates**: Predefined prompts for common tasks
 6. **Local Agent**: Includes local agents that can interact with the MCP server using the Gemini API
+7. **Google ADK Integration**: Tools compatible with Google's Agent Development Kit
 
 ## Prerequisites
 
@@ -39,6 +40,7 @@ The server follows the Model Context Protocol specification, allowing LLMs to in
    pip install -r requirements.txt
    pip install "mcp[cli]"
    pip install google-generativeai
+   pip install google-adk
    ```
 
 ## Running the Application
@@ -70,6 +72,49 @@ python src/gemini_agent.py
 ```bash
 export GEMINI_API_KEY=your_gemini_api_key_here
 python src/advanced_gemini_agent.py
+```
+
+## Google ADK Integration
+
+The MCP tools are also compatible with Google's Agent Development Kit (ADK). You can use them to create agents that work with Google's ecosystem.
+
+### Example Usage with Google ADK
+
+```python
+from google.adk.agents.llm_agent import LlmAgent
+from google.adk.tools.function_tool import FunctionTool
+from src.mcp_adk_tools import (
+    authenticate_user,
+    list_tools,
+    read_csv_excel,
+    analyze_csv_excel,
+    filter_data,
+    sort_data,
+    evaluate_opa_policy
+)
+
+# Create tools
+tools = [
+    FunctionTool(authenticate_user),
+    FunctionTool(list_tools),
+    FunctionTool(read_csv_excel),
+    FunctionTool(analyze_csv_excel),
+    FunctionTool(filter_data),
+    FunctionTool(sort_data),
+    FunctionTool(evaluate_opa_policy),
+]
+
+# Set tool names and descriptions
+tools[0].name = "authenticate_user"
+tools[0].description = "Authenticate a user with username and password"
+# ... set names and descriptions for other tools
+
+# Create agent
+agent = LlmAgent(
+    name="mcp_data_agent",
+    description="An agent that provides tools for data processing and policy evaluation",
+    tools=tools
+)
 ```
 
 ## Tools Provided
@@ -107,6 +152,11 @@ Run the test client:
 python src/mcp_client.py
 ```
 
+Test ADK-compatible tools:
+```bash
+python src/test_adk_tools.py
+```
+
 ## Project Structure
 
 ```
@@ -114,6 +164,7 @@ mcp-server/
 ├── src/
 │   ├── mcp_server.py           # Main MCP server implementation
 │   ├── mcp_client.py           # Test client
+│   ├── mcp_adk_tools.py        # ADK-compatible tools
 │   ├── gemini_agent.py         # Simple local agent using Gemini API
 │   └── advanced_gemini_agent.py # Advanced local agent with function calling
 ├── tests/                      # Test files
@@ -135,6 +186,8 @@ This MCP server can be integrated with any LLM application that supports the Mod
 - Chat interfaces
 
 It can also be used with local agents that leverage the Gemini API for natural language interaction.
+
+Additionally, the tools are compatible with Google's Agent Development Kit, allowing you to create agents that work with Google's ecosystem.
 
 ## Conventional Commits
 
