@@ -1,0 +1,20 @@
+{
+  "name": "mcp-server-dev",
+  "version": "1.0.0",
+  "description": "Multi-Component Platform Server with authenticated tools for data processing and policy evaluation.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.54.1"
+  }
+}
