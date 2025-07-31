@@ -1,0 +1,36 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+' Define components
+actor "LLM Application" as llm
+rectangle "MCP Server" as mcp_server {
+  rectangle "Authentication" as auth
+  rectangle "CSV Tools" as csv_tools
+  rectangle "OPA Integration" as opa_integration
+}
+rectangle "OPA Service" as opa
+database "Data Storage" as storage
+database "Policy Storage" as policies
+
+' Define relationships
+llm --> mcp_server : MCP Protocol
+mcp_server --> auth : User Auth
+mcp_server --> csv_tools : File Operations
+mcp_server --> opa_integration : Policy Checks
+opa_integration --> opa : Policy Evaluation
+opa --> policies : Load Policies
+csv_tools --> storage : Read/Write Data
+
+note right of mcp_server
+  Implements Model Context Protocol
+  Provides tools for LLM applications
+  Handles authentication and authorization
+end note
+
+note right of opa
+  Open Policy Agent
+  Evaluates access control policies
+end note
+
+@enduml
