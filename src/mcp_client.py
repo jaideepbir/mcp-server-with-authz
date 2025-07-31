@@ -1,24 +1,34 @@
 #!/usr/bin/env python3
 """
-Simple test for the MCP Server
+Simple test for the MCP Server functions
 """
-from src.mcp_server import mcp
+import sys
+import os
 
-# Test the server functions directly
+# Add the src directory to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+# Import the functions directly
+from src.mcp_server import (
+    authenticate_user,
+    list_tools,
+    evaluate_opa_policy
+)
+
 if __name__ == "__main__":
     # Test authentication
     print("Testing authentication:")
-    result = mcp._tools["authenticate_user"].function(username="user", password="user123")
+    result = authenticate_user(username="user", password="user123")
     print(f"Authentication result: {result}")
     
     # List tools
     print("\nListing tools:")
-    result = mcp._tools["list_tools"].function()
+    result = list_tools()
     print(f"Tools: {result}")
     
     # Test OPA policy evaluation
     print("\nTesting OPA policy evaluation:")
-    result = mcp._tools["evaluate_opa_policy"].function(
+    result = evaluate_opa_policy(
         policy_name="simple",
         input_data={"user": {"role": "user"}, "action": "read"}
     )
