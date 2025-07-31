@@ -18,11 +18,13 @@ The server follows the Model Context Protocol specification, allowing LLMs to in
 3. **OPA Policy Evaluation**: Evaluate access control policies (simple, advanced, attribute-based)
 4. **Resource Access**: Access file contents through MCP resources
 5. **Prompt Templates**: Predefined prompts for common tasks
+6. **Local Agent**: Includes local agents that can interact with the MCP server using the Gemini API
 
 ## Prerequisites
 
 - Python 3.8+
 - pip (Python package installer)
+- Google Gemini API key (for local agent functionality)
 
 ## Installation
 
@@ -36,6 +38,7 @@ The server follows the Model Context Protocol specification, allowing LLMs to in
    ```bash
    pip install -r requirements.txt
    pip install "mcp[cli]"
+   pip install google-generativeai
    ```
 
 ## Running the Application
@@ -53,6 +56,20 @@ uv run mcp dev src/mcp_server.py
 ### As a Module
 ```bash
 python -m src.mcp_server
+```
+
+## Running the Local Agents
+
+### Simple Agent
+```bash
+export GEMINI_API_KEY=your_gemini_api_key_here
+python src/gemini_agent.py
+```
+
+### Advanced Agent with Function Calling
+```bash
+export GEMINI_API_KEY=your_gemini_api_key_here
+python src/advanced_gemini_agent.py
 ```
 
 ## Tools Provided
@@ -95,16 +112,18 @@ python src/mcp_client.py
 ```
 mcp-server/
 ├── src/
-│   ├── mcp_server.py       # Main MCP server implementation
-│   └── mcp_client.py       # Test client
-├── tests/                  # Test files
-├── docs/                   # Documentation
-├── requirements.txt        # Python dependencies
-├── package.json            # Node.js package configuration
-├── playwright.config.js    # Playwright configuration
-├── Dockerfile              # Docker configuration
-├── docker-compose.yml      # Docker Compose configuration
-└── README.md               # This file
+│   ├── mcp_server.py           # Main MCP server implementation
+│   ├── mcp_client.py           # Test client
+│   ├── gemini_agent.py         # Simple local agent using Gemini API
+│   └── advanced_gemini_agent.py # Advanced local agent with function calling
+├── tests/                      # Test files
+├── docs/                       # Documentation
+├── requirements.txt            # Python dependencies
+├── package.json                # Node.js package configuration
+├── playwright.config.js        # Playwright configuration
+├── Dockerfile                  # Docker configuration
+├── docker-compose.yml          # Docker Compose configuration
+└── README.md                   # This file
 ```
 
 ## Integration with LLM Applications
@@ -114,6 +133,8 @@ This MCP server can be integrated with any LLM application that supports the Mod
 - Custom AI applications
 - IDE plugins
 - Chat interfaces
+
+It can also be used with local agents that leverage the Gemini API for natural language interaction.
 
 ## Conventional Commits
 
