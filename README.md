@@ -4,17 +4,19 @@ Multi-Component Platform Server with authenticated tools for data processing and
 
 ## Features
 
-1. **Authentication**: JWT-based authentication for all tools
-2. **CSV/Excel Reader**: Read and display CSV/Excel files
+1. **Authentication**: JWT-based authentication with role-based access control
+2. **CSV/Excel Reader**: Read and display CSV/Excel files with sorting and filtering
 3. **CSV/Excel Analyzer**: Analyze data and generate visualizations with Plotly
 4. **OPA Client**: Evaluate access control policies using Open Policy Agent
 5. **Streamlit Web Interface**: User-friendly interface to access all tools
 6. **API Documentation**: Swagger-like API documentation
+7. **Containerized Services**: All components containerized with Docker
 
 ## Prerequisites
 
 - Python 3.8+
-- Docker (for OPA service)
+- Docker and Docker Compose
+- pip (Python package installer)
 
 ## Installation
 
@@ -36,10 +38,25 @@ Multi-Component Platform Server with authenticated tools for data processing and
 
 ## Running the Application
 
+The easiest way to run the application is using Docker Compose:
+
+```bash
+docker-compose up
+```
+
+This will start all services:
+- MCP Server API on port 5000
+- OPA service on port 8181
+- Streamlit web interface on port 8501
+
+## Manual Installation and Running
+
+If you prefer to run the services manually:
+
 1. Start the OPA service:
    ```bash
    docker build -f Dockerfile.opa -t mcp-opa .
-   docker run -p 8181:8181 mcp-opa
+   docker run -p 8181:8181 -v $(pwd)/policies:/policies mcp-opa
    ```
 
 2. Start the MCP server:
@@ -51,6 +68,12 @@ Multi-Component Platform Server with authenticated tools for data processing and
    ```bash
    streamlit run src/web/app.py
    ```
+
+## Authentication
+
+The application comes with two default users:
+- Admin user: username `admin`, password `admin123`
+- Regular user: username `user`, password `user123`
 
 ## API Endpoints
 
@@ -92,7 +115,10 @@ mcp-server/
 ├── tests/                  # Test files
 ├── docs/                   # Documentation
 ├── requirements.txt        # Python dependencies
+├── Dockerfile              # MCP Server Dockerfile
 ├── Dockerfile.opa          # OPA Dockerfile
+├── Dockerfile.streamlit    # Streamlit Dockerfile
+├── docker-compose.yml      # Docker Compose configuration
 └── README.md               # This file
 ```
 
@@ -105,3 +131,13 @@ The OPA client includes three sample policies:
 3. **Attribute-based**: Clearance-level and group-based access control
 
 Each policy has corresponding test cases in the tests directory.
+
+## Conventional Commits
+
+This project follows the Conventional Commits specification:
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `test:` - Adding or updating tests
+- `docs:` - Documentation changes
+- `refactor:` - Code refactoring
+- `chore:` - Maintenance tasks
