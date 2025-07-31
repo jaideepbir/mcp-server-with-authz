@@ -9,8 +9,8 @@ from typing import Dict, Any, List, Optional
 from mcp.server.fastmcp import FastMCP
 from mcp.types import TextResourceContents
 
-# Create an MCP server
-mcp = FastMCP("MCP Data Processing Server")
+# Create an MCP server, binding to all interfaces
+mcp = FastMCP("MCP Data Processing Server", host="0.0.0.0", port=8000)
 
 # In-memory storage for demonstration purposes
 # In a production environment, this would be replaced with a proper database or file system
@@ -226,5 +226,5 @@ def opa_policy_evaluation_prompt(policy_name: str, user_role: str, action: str) 
     """
 
 if __name__ == "__main__":
-    # Run the MCP server, binding to all interfaces
-    mcp.run(transport='sse', host='0.0.0.0', port=8000)
+    # Run the MCP server
+    mcp.run(transport='sse')
