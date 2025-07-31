@@ -4,14 +4,13 @@ Simple MCP Client for testing the MCP Server
 """
 import asyncio
 from mcp.client.stdio import stdio_client
-from mcp.types import ClientCapabilities, ClientCapabilitiesTools, ClientCapabilitiesResources
+from mcp.types import ClientCapabilities, ClientCapabilitiesTools
 
 async def main():
     async with stdio_client(
-        server_command=["python", "-m", "src.mcp_server"],
+        server_command=["python", "src/mcp_server.py"],
         capabilities=ClientCapabilities(
-            tools=ClientCapabilitiesTools(list_changes=True),
-            resources=ClientCapabilitiesResources(subscribe=True)
+            tools=ClientCapabilitiesTools(list_changes=True)
         )
     ) as (server, client):
         # Initialize the connection
