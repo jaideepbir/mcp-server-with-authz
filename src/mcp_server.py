@@ -37,6 +37,8 @@ def list_tools() -> List[str]:
     return [
         "CSV/Excel Reader",
         "CSV/Excel Analyzer",
+        "Data Filter",
+        "Data Sort",
         "OPA Policy Evaluator"
     ]
 
@@ -224,5 +226,5 @@ def opa_policy_evaluation_prompt(policy_name: str, user_role: str, action: str) 
     """
 
 if __name__ == "__main__":
-    # Run the MCP server
-    mcp.run()
+    # Run the MCP server, binding to all interfaces
+    mcp.run(transport='sse', host='0.0.0.0', port=8000)
