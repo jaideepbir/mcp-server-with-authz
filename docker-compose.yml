@@ -6,22 +6,20 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "8000:8000"
     environment:
-      - OPA_URL=http://opa:8181
-    depends_on:
-      - opa
-      
-  opa:
-    image: openpolicyagent/opa:0.57.0-rootless
-    platform: linux/arm64
+      - HOST=0.0.0.0
+      - PORT=8000
+    command: ["python", "src/mcp_server.py"]
+
+  streamlit-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "8181:8181"
-    volumes:
-      - ./policies:/policies
-    command: 
-      - "run"
-      - "--server"
-      - "--log-format=json"
-      - "--log-level=info"
-      - "/policies"
+      - "8501:8501"
+    environment:
+      - SERVER_URL=http://mcp-server:8000
+    command: ["streamlit", "run", "src/streamlit_mcp_client.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    depends_on:
+      - mcp-server

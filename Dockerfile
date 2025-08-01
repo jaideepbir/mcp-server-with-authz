@@ -1,4 +1,4 @@
-# Dockerfile for MCP Server
+# Dockerfile for MCP Server with Streamlit Client
 FROM python:3.9-slim
 
 # Set working directory
@@ -12,13 +12,13 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install "mcp[cli]"
+RUN pip install "mcp[cli]" streamlit
 
 # Copy application code
 COPY . .
 
-# Expose port
-EXPOSE 8080
+# Expose ports
+EXPOSE 8000 8501
 
-# Run MCP server
+# Default command runs the MCP server
 CMD ["python", "src/mcp_server.py"]
