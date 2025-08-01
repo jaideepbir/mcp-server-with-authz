@@ -4,22 +4,20 @@ services:
   mcp-server:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.mcp
     ports:
       - "8000:8000"
     environment:
       - HOST=0.0.0.0
       - PORT=8000
-    command: ["python", "src/mcp_server.py"]
 
   streamlit-client:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.streamlit
     ports:
       - "8501:8501"
     environment:
-      - SERVER_URL=http://mcp-server:8000
-    command: ["streamlit", "run", "src/streamlit_mcp_client.py", "--server.port=8501", "--server.address=0.0.0.0"]
+      - MCP_SERVER_URL=http://mcp-server:8000
     depends_on:
       - mcp-server
