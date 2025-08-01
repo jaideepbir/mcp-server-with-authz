@@ -1,31 +1,45 @@
-# MCP Server (Model Context Protocol)
+# 🧩 Model Context Protocol (MCP) Server
 
-Model Context Protocol Server with tools for data processing and policy evaluation.
+A Model Context Protocol (MCP) server implementation with tools for data processing, authentication, and policy evaluation.
 
-## Overview
+## 🔍 Overview
 
 This project implements a Model Context Protocol (MCP) server that provides tools for:
-1. CSV/Excel reading and analysis
-2. Data filtering and sorting
-3. OPA policy evaluation for access control
+1. User authentication with role-based access control
+2. CSV/Excel reading and analysis
+3. Data filtering and sorting
+4. Policy evaluation using Open Policy Agent (OPA)
 
 The server follows the Model Context Protocol specification, allowing LLMs to interact with these tools through a standardized interface.
 
-## Features
+## 🚀 Features
 
+### ✅ Core Features
 1. **Authentication**: User authentication with role-based access control
-2. **CSV/Excel Processing**: Read, analyze, filter, and sort CSV/Excel files
-3. **OPA Policy Evaluation**: Evaluate access control policies (simple, advanced, attribute-based)
+2. **Data Processing**: Read, analyze, filter, and sort CSV/Excel files
+3. **Policy Evaluation**: Evaluate access control policies using Open Policy Agent
 4. **Resource Access**: Access file contents through MCP resources
-5. **Prompt Templates**: Predefined prompts for common tasks
 
-## Prerequisites
+### ✅ Enhanced Features
+1. **Streamlit Client**: User-friendly web interface to interact with all tools
+2. **Specialized Tool Interfaces**:
+   - File upload for CSV/Excel processing tools
+   - Policy selector with predefined JSON schemas for policy evaluation
+   - Role-based permissions display for authentication
+3. **Docker Support**: Containerized deployment with Docker Compose
+4. **Extensible Architecture**: Easy to add new tools and resources
+
+## 📦 Prerequisites
 
 - Python 3.8+
 - pip (Python package installer)
+- Git
 
-## Installation
+## 🛠️ Quickstart
 
+For detailed installation and deployment instructions, see the [Quickstart Guide](QUICKSTART.md).
+
+### Quick Installation
 1. Clone the repository:
    ```bash
    git clone <repository-url>
@@ -34,91 +48,51 @@ The server follows the Model Context Protocol specification, allowing LLMs to in
 
 2. Install Python dependencies:
    ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    pip install -r requirements.txt
    pip install "mcp[cli]"
    ```
 
-## Running the Application
-
-### Direct Execution
+### Run the Server
 ```bash
 python src/mcp_server.py
 ```
+The server will be available at `http://localhost:8000` with the SSE endpoint at `http://localhost:8000/sse`.
 
-### Development Mode (with MCP Inspector)
+### Run the Streamlit Client (Optional)
+In a separate terminal:
 ```bash
-uv run mcp dev src/mcp_server.py
+streamlit run src/streamlit_mcp_client.py
 ```
+The client will be available at `http://localhost:8501`.
 
-### As a Module
-```bash
-python -m src.mcp_server
-```
-
-## Tools Provided
-
-### Authentication
-- `authenticate_user(username, password)`: Authenticate a user and return their role
-
-### Tool Management
-- `list_tools()`: List available tools in the MCP server
-
-### Data Processing
-- `read_csv_excel(file_path)`: Read a CSV or Excel file and return its contents as JSON
-- `analyze_csv_excel(file_path)`: Analyze a CSV or Excel file and return statistical summary
-- `filter_data(file_path, column, value)`: Filter data by column value
-- `sort_data(file_path, column, ascending)`: Sort data by column
-
-### Policy Evaluation
-- `evaluate_opa_policy(policy_name, input_data)`: Evaluate an OPA policy with input data
-
-## Resources
-
-### File Access
-- `file://{file_path}`: Access the content of a file
-
-## Prompts
-
-### Analysis Prompts
-- `csv_analysis_prompt(file_path)`: Generate a prompt for CSV analysis
-- `opa_policy_evaluation_prompt(policy_name, user_role, action)`: Generate a prompt for OPA policy evaluation
-
-## Testing
+## 🧪 Testing
 
 Run the test client:
 ```bash
 python src/mcp_client.py
 ```
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 mcp-server/
 ├── src/
 │   ├── mcp_server.py       # Main MCP server implementation
+│   ├── streamlit_mcp_client.py # Streamlit client
 │   └── mcp_client.py       # Test client
 ├── tests/                  # Test files
-├── docs/                   # Documentation
 ├── requirements.txt        # Python dependencies
-├── Dockerfile              # Docker configuration
 ├── docker-compose.yml      # Docker Compose configuration
+├── QUICKSTART.md           # Quickstart and Deployment guide
 └── README.md               # This file
 ```
 
-## Integration with LLM Applications
+## 🤝 Contributing
 
-This MCP server can be integrated with any LLM application that supports the Model Context Protocol, such as:
-- Claude Desktop
-- Custom AI applications
-- IDE plugins
-- Chat interfaces
+Contributions are welcome! Please fork the repository and submit a pull request.
 
-## Conventional Commits
+## 📄 License
 
-This project follows the Conventional Commits specification:
-- `feat:` - New features
-- `fix:` - Bug fixes
-- `test:` - Adding or updating tests
-- `docs:` - Documentation changes
-- `refactor:` - Code refactoring
-- `chore:` - Maintenance tasks
+This project is licensed under the MIT License - see the LICENSE file for details.
