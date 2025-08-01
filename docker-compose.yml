@@ -21,3 +21,14 @@ services:
       - MCP_SERVER_URL=http://mcp-server:8000
     depends_on:
       - mcp-server
+
+  llm-chat:
+    build:
+      context: ./llm-chat-app
+      dockerfile: Dockerfile
+    ports:
+      - "8502:8502"
+    environment:
+      - MCP_SERVER_URL=http://mcp-server:8000
+    depends_on:
+      - mcp-server
