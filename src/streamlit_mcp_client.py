@@ -6,6 +6,7 @@ import asyncio
 import json
 import tempfile
 import os
+import pandas as pd
 from typing import Dict, Any, List
 
 # Initialize session state
@@ -14,6 +15,7 @@ if 'connected' not in st.session_state:
     st.session_state.tools = []
     st.session_state.selected_tool = None
     st.session_state.tool_result = None
+    st.session_state.uploaded_data = None
 
 def initialize_session_state():
     """Initialize session state variables"""
@@ -25,6 +27,8 @@ def initialize_session_state():
         st.session_state.selected_tool = None
     if 'tool_result' not in st.session_state:
         st.session_state.tool_result = None
+    if 'uploaded_data' not in st.session_state:
+        st.session_state.uploaded_data = None
 
 # Set page configuration
 st.set_page_config(
@@ -75,6 +79,7 @@ with st.sidebar:
             st.session_state.tools = []
             st.session_state.selected_tool = None
             st.session_state.tool_result = None
+            st.session_state.uploaded_data = None
             st.rerun()
 
 # Main content area
@@ -231,10 +236,11 @@ else:
                             }
                         st.rerun()
                 
-                elif tool['name'] in ['read_csv_excel', 'analyze_csv_excel']:
-                    st.markdown("**Enhanced File Processing Interface**")
+                elif tool['name'] in ['read_csv_excel', 'analyze_csv_excel', 'filter_data', 'sort_data']:
+                    st.markdown("**Enhanced Data Processing Interface**")
                     
-                    # File uploader
+                    # File uploading section
+                    st.markdown("### File Upload")
                     uploaded_file = st.file_uploader(
                         "Upload CSV or Excel File",
                         type=["csv", "xlsx", "xls"],
@@ -242,34 +248,232 @@ else:
                     )
                     
                     if uploaded_file is not None:
-                        # Save file temporarily
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
-                            tmp_file.write(uploaded_file.getvalue())
-                            temp_file_path = tmp_file.name
-                        
-                        st.success(f"File uploaded: {uploaded_file.name}")
-                        st.info(f"Temporary path: {temp_file_path}")
-                        
-                        # Parameter input
-                        params = {
-                            "file_path": temp_file_path
-                        }
-                        
-                        if st.button(f"📄 {tool['name'].replace('_', ' ').title()}", type="primary"):
-                            # Simulate file processing
-                            st.session_state.tool_result = {
-                                "tool": tool['name'],
-                                "parameters": params,
-                                "timestamp": "2025-08-01T12:00:00Z",
-                                "result": f"Processed file: {uploaded_file.name}"
+                        # Save file temporarily and process it
+                        try:
+                            # Save file to temporary location
+                            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
+                                tmp_file.write(uploaded_file.getvalue())
+                                temp_file_path = tmp_file.name
+                            
+                            # Process file for display
+                            if uploaded_file.name.endswith('.csv'):
+                                df = pd.read_csv(temp_file_path)
+                            else:
+                                df = pd.read_excel(temp_file_path)
+                            
+                            # Store in session state
+                            st.session_state.uploaded_data = {
+                                "filename": uploaded_file.name,
+                                "temp_path": temp_file_path,
+                                "dataframe": df,
+                                "columns": df.columns.tolist()
                             }
-                            st.rerun()
-                        
-                        # Clean up temp file
-                        if os.path.exists(temp_file_path):
-                            os.unlink(temp_file_path)
+                            
+                            st.success(f"File uploaded: {uploaded_file.name}")
+                            
+                            # Display file preview
+                            st.markdown("### File Preview")
+                            st.write(f"Rows: {len(df)}, Columns: {len(df.columns)}")
+                            st.dataframe(df.head(10))
+                            
+                            # Tool-specific parameters
+                            if tool['name'] == 'read_csv_excel':
+                                # For read tool, just use the file path
+                                params = {"file_path": temp_file_path}
+                                
+                                if st.button("📄 Read File", type="primary"):
+                                    # Simulate file reading
+                                    result = {
+                                        "data": df.to_dict(orient='records'),
+                                        "columns": df.columns.tolist(),
+                                        "rows": len(df)
+                                    }
+                                    
+                                    st.session_state.tool_result = {
+                                        "tool": "read_csv_excel",
+                                        "parameters": params,
+                                        "timestamp": "2025-08-01T12:00:00Z",
+                                        "result": result
+                                    }
+                                    st.rerun()
+                                    
+                            elif tool['name'] == 'analyze_csv_excel':
+                                # For analyze tool, just use the file path
+                                params = {"file_path": temp_file_path}
+                                
+                                if st.button("📊 Analyze File", type="primary"):
+                                    # Perform basic statistical analysis
+                                    summary = df.describe(include='all').to_dict()
+                                    
+                                    result = {
+                                        "summary": summary,
+                                        "columns": df.columns.tolist(),
+                                        "rows": len(df)
+                                    }
+                                    
+                                    st.session_state.tool_result = {
+                                        "tool": "analyze_csv_excel",
+                                        "parameters": params,
+                                        "timestamp": "2025-08-01T12:00:00Z",
+                                        "result": result
+                                    }
+                                    st.rerun()
+                                    
+                            elif tool['name'] == 'filter_data':
+                                # For filter tool, select column and value
+                                st.markdown("### Filter Configuration")
+                                if st.session_state.uploaded_data:
+                                    columns = st.session_state.uploaded_data['columns']
+                                    column = st.selectbox("Column to Filter By:", columns)
+                                    
+                                    # Get unique values in the selected column
+                                    if column in st.session_state.uploaded_data['dataframe'].columns:
+                                        unique_values = st.session_state.uploaded_data['dataframe'][column].dropna().unique().tolist()
+                                        if len(unique_values) <= 100:  # Only show dropdown if not too many values
+                                            value = st.selectbox("Filter Value:", unique_values)
+                                        else:
+                                            value = st.text_input("Filter Value:")
+                                    else:
+                                        value = st.text_input("Filter Value:")
+                                    
+                                    params = {
+                                        "file_path": temp_file_path,
+                                        "column": column,
+                                        "value": value
+                                    }
+                                    
+                                    if st.button("🔍 Filter Data", type="primary"):
+                                        # Apply filter
+                                        df_filtered = st.session_state.uploaded_data['dataframe']
+                                        filtered_df = df_filtered[df_filtered[column] == value]
+                                        
+                                        result = {
+                                            "data": filtered_df.to_dict(orient='records'),
+                                            "columns": filtered_df.columns.tolist(),
+                                            "rows": len(filtered_df)
+                                        }
+                                        
+                                        st.session_state.tool_result = {
+                                            "tool": "filter_data",
+                                            "parameters": params,
+                                            "timestamp": "2025-08-01T12:00:00Z",
+                                            "result": result
+                                        }
+                                        st.rerun()
+                                        
+                            elif tool['name'] == 'sort_data':
+                                # For sort tool, select column and direction
+                                st.markdown("### Sort Configuration")
+                                if st.session_state.uploaded_data:
+                                    columns = st.session_state.uploaded_data['columns']
+                                    column = st.selectbox("Column to Sort By:", columns)
+                                    ascending = st.checkbox("Ascending", value=True)
+                                    
+                                    params = {
+                                        "file_path": temp_file_path,
+                                        "column": column,
+                                        "ascending": ascending
+                                    }
+                                    
+                                    if st.button("🔄 Sort Data", type="primary"):
+                                        # Apply sorting
+                                        df_sorted = st.session_state.uploaded_data['dataframe']
+                                        sorted_df = df_sorted.sort_values(by=column, ascending=ascending)
+                                        
+                                        result = {
+                                            "data": sorted_df.to_dict(orient='records'),
+                                            "columns": sorted_df.columns.tolist(),
+                                            "rows": len(sorted_df)
+                                        }
+                                        
+                                        st.session_state.tool_result = {
+                                            "tool": "sort_data",
+                                            "parameters": params,
+                                            "timestamp": "2025-08-01T12:00:00Z",
+                                            "result": result
+                                        }
+                                        st.rerun()
+                        except Exception as e:
+                            st.error(f"Error processing file: {str(e)}")
                     else:
                         st.info("Please upload a CSV or Excel file to process")
+                        
+                        # If we already have uploaded data from a previous interaction
+                        if st.session_state.uploaded_data:
+                            st.info(f"Previously uploaded: {st.session_state.uploaded_data['filename']}")
+                            
+                            # Show quick action buttons for tools that work with existing data
+                            if tool['name'] == 'filter_data':
+                                # Reuse existing data
+                                st.markdown("### Filter Configuration")
+                                columns = st.session_state.uploaded_data['columns']
+                                column = st.selectbox("Column to Filter By:", columns)
+                                
+                                if column in st.session_state.uploaded_data['dataframe'].columns:
+                                    unique_values = st.session_state.uploaded_data['dataframe'][column].dropna().unique().tolist()
+                                    if len(unique_values) <= 100:  # Only show dropdown if not too many values
+                                        value = st.selectbox("Filter Value:", unique_values)
+                                    else:
+                                        value = st.text_input("Filter Value:")
+                                else:
+                                    value = st.text_input("Filter Value:")
+                                
+                                params = {
+                                    "file_path": st.session_state.uploaded_data['temp_path'],
+                                    "column": column,
+                                    "value": value
+                                }
+                                
+                                if st.button("🔍 Filter Data", type="primary"):
+                                    # Apply filter
+                                    df_filtered = st.session_state.uploaded_data['dataframe']
+                                    filtered_df = df_filtered[df_filtered[column] == value]
+                                    
+                                    result = {
+                                        "data": filtered_df.to_dict(orient='records'),
+                                        "columns": filtered_df.columns.tolist(),
+                                        "rows": len(filtered_df)
+                                    }
+                                    
+                                    st.session_state.tool_result = {
+                                        "tool": "filter_data",
+                                        "parameters": params,
+                                        "timestamp": "2025-08-01T12:00:00Z",
+                                        "result": result
+                                    }
+                                    st.rerun()
+                                    
+                            elif tool['name'] == 'sort_data':
+                                # Reuse existing data
+                                st.markdown("### Sort Configuration")
+                                columns = st.session_state.uploaded_data['columns']
+                                column = st.selectbox("Column to Sort By:", columns)
+                                ascending = st.checkbox("Ascending", value=True)
+                                
+                                params = {
+                                    "file_path": st.session_state.uploaded_data['temp_path'],
+                                    "column": column,
+                                    "ascending": ascending
+                                }
+                                
+                                if st.button("🔄 Sort Data", type="primary"):
+                                    # Apply sorting
+                                    df_sorted = st.session_state.uploaded_data['dataframe']
+                                    sorted_df = df_sorted.sort_values(by=column, ascending=ascending)
+                                    
+                                    result = {
+                                        "data": sorted_df.to_dict(orient='records'),
+                                        "columns": sorted_df.columns.tolist(),
+                                        "rows": len(sorted_df)
+                                    }
+                                    
+                                    st.session_state.tool_result = {
+                                        "tool": "sort_data",
+                                        "parameters": params,
+                                        "timestamp": "2025-08-01T12:00:00Z",
+                                        "result": result
+                                    }
+                                    st.rerun()
                 
                 elif tool['name'] == 'evaluate_opa_policy':
                     st.markdown("**Enhanced Policy Evaluation Interface**")
@@ -382,51 +586,6 @@ else:
                         }
                         st.rerun()
                 
-                elif tool['name'] in ['filter_data', 'sort_data']:
-                    st.markdown("**Enhanced Data Processing Interface**")
-                    
-                    # File path input
-                    file_path = st.text_input(
-                        "File Path:",
-                        placeholder="/path/to/your/file.csv",
-                        help="Enter the path to your CSV or Excel file"
-                    )
-                    
-                    if file_path:
-                        if tool['name'] == 'filter_data':
-                            # Filter-specific inputs
-                            column = st.text_input("Column to Filter By:", "name")
-                            value = st.text_input("Filter Value:", "John")
-                            
-                            params = {
-                                "file_path": file_path,
-                                "column": column,
-                                "value": value
-                            }
-                            
-                        else:  # sort_data
-                            # Sort-specific inputs
-                            column = st.text_input("Column to Sort By:", "age")
-                            ascending = st.checkbox("Ascending Order", value=True)
-                            
-                            params = {
-                                "file_path": file_path,
-                                "column": column,
-                                "ascending": ascending
-                            }
-                        
-                        if st.button(f"📊 {tool['name'].replace('_', ' ').title()}", type="primary"):
-                            # Simulate data processing
-                            st.session_state.tool_result = {
-                                "tool": tool['name'],
-                                "parameters": params,
-                                "timestamp": "2025-08-01T12:00:00Z",
-                                "result": f"Processed data with parameters: {json.dumps(params, indent=2)}"
-                            }
-                            st.rerun()
-                    else:
-                        st.info("Please enter a file path to process")
-                
                 elif tool['name'] == 'list_tools':
                     st.markdown("**Tool Listing Interface**")
                     
@@ -526,7 +685,32 @@ else:
             if st.session_state.tool_result:
                 st.subheader("Execution Result")
                 result = st.session_state.tool_result
-                st.json(result)
+                
+                # Pretty print the result with special handling for data tools
+                if result["tool"] in ["read_csv_excel", "analyze_csv_excel", "filter_data", "sort_data"]:
+                    # Special handling for data tools
+                    st.json({"tool": result["tool"], "parameters": result["parameters"], "timestamp": result["timestamp"]})
+                    
+                    if isinstance(result["result"], dict) and "data" in result["result"]:
+                        # Display data result as a dataframe
+                        data = result["result"]["data"]
+                        if isinstance(data, list) and len(data) > 0:
+                            df = pd.DataFrame(data)
+                            st.write(f"Rows: {len(data)}, Columns: {len(df.columns) if len(data) > 0 else 0}")
+                            st.dataframe(df)
+                        else:
+                            st.write("No data returned")
+                    elif isinstance(result["result"], dict) and "summary" in result["result"]:
+                        # Display analysis result
+                        summary = result["result"]["summary"]
+                        st.write("Statistical Summary:")
+                        summary_df = pd.DataFrame(summary)
+                        st.dataframe(summary_df)
+                    else:
+                        st.json(result["result"])
+                else:
+                    # Standard result display
+                    st.json(result)
     
     with tab2:
         st.subheader("About MCP Client")
@@ -546,9 +730,9 @@ else:
         
         ### Enhanced Tool Interfaces
         - **Authentication**: Predefined user credentials with role-based permissions display
-        - **File Processing**: File upload interface for CSV/Excel files
+        - **File Processing**: File upload interface for CSV/Excel files with preview and processing
         - **Policy Evaluation**: Policy selector with predefined JSON schemas
-        - **Data Operations**: Specialized interfaces for filtering and sorting
+        - **Data Operations**: Specialized interfaces for filtering and sorting with column selection
         
         ### Supported Operations
         - User authentication
