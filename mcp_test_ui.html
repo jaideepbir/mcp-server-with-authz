@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MCP Server Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        input, select { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+        pre { background-color: #f5f5f5; padding: 15px; overflow: auto; }
+        .result { margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MCP Server Test Interface</h1>
+        
+        <div class="section">
+            <h2>Server Connection</h2>
+            <p>Make sure the MCP server is running on <code>http://localhost:8000</code></p>
+            <button onclick="testConnection()">Test Connection</button>
+            <div id="connection-result" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Authentication</h2>
+            <input type="text" id="username" placeholder="Username" value="user">
+            <input type="password" id="password" placeholder="Password" value="user123">
+            <button onclick="authenticate()">Authenticate</button>
+            <div id="auth-result" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Available Tools</h2>
+            <button onclick="listTools()">List Tools</button>
+            <div id="tools-result" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>File Operations</h2>
+            <input type="text" id="file-path" placeholder="File path (e.g., /path/to/file.csv)">
+            <button onclick="readFile()">Read File</button>
+            <button onclick="analyzeFile()">Analyze File</button>
+            <div id="file-result" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Policy Evaluation</h2>
+            <select id="policy-name">
+                <option value="simple">Simple Policy</option>
+                <option value="advanced">Advanced Policy</option>
+                <option value="attribute_based">Attribute Based Policy</option>
+            </select>
+            <input type="text" id="user-role" placeholder="User role" value="user">
+            <input type="text" id="action" placeholder="Action" value="read">
+            <button onclick="evaluatePolicy()">Evaluate Policy</button>
+            <div id="policy-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Base URL for the MCP server
+        const BASE_URL = 'http://localhost:8000';
+        
+        // Test connection to the server
+        async function testConnection() {
+            const resultDiv = document.getElementById('connection-result');
+            try {
+                const response = await fetch(`${BASE_URL}/`);
+                if (response.status === 404) {
+                    resultDiv.innerHTML = '<p style="color:green">Connected to server (404 is expected for root endpoint)</p>';
+                } else {
+                    resultDiv.innerHTML = `<p style="color:green">Connected to server (Status: ${response.status})</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color:red">Error connecting to server: ${error.message}</p>`;
+            }
+        }
+        
+        // Authenticate user
+        async function authenticate() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('auth-result');
+            
+            try {
+                // Note: Actual authentication with MCP would be more complex
+                // This is a simplified simulation
+                resultDiv.innerHTML = '<p>Authentication would happen through MCP protocol</p>';
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // List available tools
+        async function listTools() {
+            const resultDiv = document.getElementById('tools-result');
+            
+            try {
+                // Note: Actual tool listing with MCP would be more complex
+                // This is a simplified simulation showing what tools are available
+                const tools = [
+                    "authenticate_user",
+                    "list_tools", 
+                    "read_csv_excel",
+                    "analyze_csv_excel",
+                    "filter_data",
+                    "sort_data",
+                    "evaluate_opa_policy"
+                ];
+                
+                let html = '<h3>Available Tools:</h3><ul>';
+                tools.forEach(tool => {
+                    html += `<li>${tool}</li>`;
+                });
+                html += '</ul>';
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Read file
+        async function readFile() {
+            const filePath = document.getElementById('file-path').value;
+            const resultDiv = document.getElementById('file-result');
+            
+            try {
+                // Note: Actual file reading with MCP would be more complex
+                // This is a simplified simulation
+                resultDiv.innerHTML = `<p>File reading would happen through MCP protocol<br>File path: ${filePath}</p>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Analyze file
+        async function analyzeFile() {
+            const filePath = document.getElementById('file-path').value;
+            const resultDiv = document.getElementById('file-result');
+            
+            try {
+                // Note: Actual file analysis with MCP would be more complex
+                // This is a simplified simulation
+                resultDiv.innerHTML = `<p>File analysis would happen through MCP protocol<br>File path: ${filePath}</p>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Evaluate policy
+        async function evaluatePolicy() {
+            const policyName = document.getElementById('policy-name').value;
+            const userRole = document.getElementById('user-role').value;
+            const action = document.getElementById('action').value;
+            const resultDiv = document.getElementById('policy-result');
+            
+            try {
+                // Note: Actual policy evaluation with MCP would be more complex
+                // This is a simplified simulation
+                resultDiv.innerHTML = `
+                    <p>Policy evaluation would happen through MCP protocol</p>
+                    <p>Policy: ${policyName}</p>
+                    <p>User role: ${userRole}</p>
+                    <p>Action: ${action}</p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
