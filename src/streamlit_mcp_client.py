@@ -4,7 +4,6 @@ Streamlit MCP Client Application
 import streamlit as st
 import asyncio
 import json
-import aiohttp
 from typing import Dict, Any, List
 
 # Initialize session state
